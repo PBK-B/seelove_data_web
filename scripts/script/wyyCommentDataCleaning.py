@@ -4,6 +4,7 @@ import json
 def wyyCommentCleaning():
     wyyCommentJsonData = dict()
     wyyCommentListData = []
+    wyyCommentListDataEnd = []
     with open('data/wyyComment.txt', 'r') as fp:
         data = fp.read()
         dataList = data.split(',')
@@ -12,8 +13,9 @@ def wyyCommentCleaning():
             if keyWord == '':
                 continue
             value = dataList.count(keyWord)
-            wyyCommentListData.append({'keyWord': keyWord, 'value': value})
+            wyyCommentListData.append({'name': keyWord, 'value': value})
 
-    wyyCommentJsonData = {'data': wyyCommentListData}
-    with open('../data/wyyCommentJsonData.json', 'w+', encoding='utf8') as fp:
+    wyyCommentListDataEnd = [item for item in wyyCommentListData if item['value'] > 1]
+    wyyCommentJsonData = {'data': wyyCommentListDataEnd}
+    with open('../src/data/data.json', 'w+', encoding='utf8') as fp:
         json.dump(wyyCommentJsonData, fp, ensure_ascii=False)
