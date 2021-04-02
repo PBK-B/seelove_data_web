@@ -1,8 +1,9 @@
 import requests
 import json
-import re
+import os
 import jieba
 import jieba.analyse
+from getWyyHostPlayListInfo import selectWyyHostPlayListInfo
 
 # 判断感情的关键词
 keyWords = {'爱情', '感情', '喜欢', '分开', '离开', 'love', '再见', '高一', '孩子', '责任', '存在', '得到', '失去', '距离', '记得', '模糊', '暗恋',
@@ -12,35 +13,48 @@ keyWords = {'爱情', '感情', '喜欢', '分开', '离开', 'love', '再见', 
             '失眠', '噩梦', '微风', '欢喜'}
 
 
+# 判断data目录下是否有文件，有的话进行删除
+def delFile():
+    try:
+        os.remove('../data/wyyComment.txt')
+    except OSError:
+        pass
+
+
 # 歌曲获取循环
 def getWyyComment():
-    for songId in [1827600686, 1394963332, 167873]:
+    delFile()
+    songIdList = selectWyyHostPlayListInfo()
+    for songId in list(songIdList):
         # 获取歌曲评论循环
+        isContinue = False
         for page in range(1, 10000):
             print(f'开始获取第{page}页数据')
             endList = []
             url = f"http://localhost:3000/comment/new?type=0&id={songId}&sortType=1&pageNo={page}"
             response = requests.get(url)
-            data = json.loads(response.text)['data']['comments']
-            # 判断当前页面是否存在数据，没有数据跳出这个首歌
-            if not data:
-                break
-            else:
-                for item in data:
-                    # 歌词关键词分割
-                    dataList = jieba.analyse.extract_tags(item['content'], topK=20, withWeight=False,
-                                                          allowPOS=(
-                                                              'ns', 'n', 'vn', 'v', 'TIME', 'LOC', 'PER', 'a', 'b',
-                                                              't'))
-                    # 判断分割的关键词中是否包含有上面关于感情的关键词
-                    if set(dataList) & keyWords:
-                        for keyWord in dataList:
-                            endList.append(keyWord)
-                # 数据写入到文本中
-                print('开始写入数据')
-                with open('data/wyyComment.txt', 'a+') as fp:
-                    for i in endList:
-                        fp.write(i + ',')
-                print('数据写入完成')
-                print('数据获取完成')
-                print(f'第{page}页获取数据长度为', len(endList))
+            try:
+                data = json.loads(response.text)['data']['comments']
+                # 判断当前页面是否存在数据，没有数据跳出这个首歌
+                if not data:
+                    break
+                else:
+                    for item in data:
+                        # 歌词关键词分割
+                        dataList = jieba.analyse.extract_tags(item['content'], topK=20, withWeight=False,
+                                                              allowPOS=(
+                                                                  'ns', 'n', 'vn', 'v', 'TIME', 'LOC', 'PER', 'a', 'b',
+                                                                  't'))
+                        # 判断分割的关键词中是否包含有上面关于感情的关键词
+                        if set(dataList) & keyWords:
+                            for keyWord in dataList:
+                                endList.append(keyWord)
+                    # 数据写入到文本中
+                    with open('data/wyyComment.txt', 'a+') as fp:
+                        for i in endList:
+                            fp.write(i + ',')
+            except KeyError:
+                isContinue = True
+                continue
+        if isContinue:
+            continue
